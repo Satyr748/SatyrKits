@@ -1,0 +1,15 @@
+name: SatyrKits
+version: 1.0.0
+main: de.satyr.satyrkits.SatyrKits
+api-version: '1.21'
+author: Satyr
+description: OP-only PvP kit management plugin
+commands:
+  kit:
+    description: Opens the SatyrKits management menu
+    usage: /kit
+    permission: satyrkits.admin
+permissions:
+  satyrkits.admin:
+    description: Allows access to all SatyrKits commands and menus
+    default: op
