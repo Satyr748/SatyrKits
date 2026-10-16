@@ -25,6 +25,7 @@ public final class SatyrKits extends JavaPlugin implements Listener {
     private static final String MAIN_TITLE = ChatColor.DARK_GRAY + "SatyrKits";
     private static final String CLAIM_TITLE = ChatColor.DARK_GRAY + "SatyrKits » Claim Kit";
     private static final String GIVE_TITLE = ChatColor.DARK_GRAY + "SatyrKits » Give Kit All";
+    private static final String DELETE_TITLE = ChatColor.DARK_GRAY + "SatyrKits » Delete Kit";
     private final Map<UUID, Boolean> awaitingKitName = new ConcurrentHashMap<>();
 
     @Override
@@ -64,9 +65,10 @@ public final class SatyrKits extends JavaPlugin implements Listener {
 
     private void openMainMenu(Player player) {
         Inventory inv = Bukkit.createInventory(null, 27, MAIN_TITLE);
-        inv.setItem(11, menuItem(Material.WRITABLE_BOOK, "&aCreate Kit", "&7Save your current inventory as a kit."));
-        inv.setItem(13, menuItem(Material.CHEST, "&eClaim Kit", "&7Choose a kit to receive."));
-        inv.setItem(15, menuItem(Material.DIAMOND_SWORD, "&cGive Kit All", "&7Give a kit to every online player."));
+        inv.setItem(10, menuItem(Material.WRITABLE_BOOK, "&aCreate Kit", "&7Save your current inventory as a kit."));
+        inv.setItem(12, menuItem(Material.CHEST, "&eClaim Kit", "&7Choose a kit to receive."));
+        inv.setItem(14, menuItem(Material.DIAMOND_SWORD, "&cGive Kit All", "&7Give a kit to every online player."));
+        inv.setItem(16, menuItem(Material.BARRIER, "&4Delete Kit", "&7Permanently delete a saved kit."));
         player.openInventory(inv);
     }
 
@@ -89,7 +91,7 @@ public final class SatyrKits extends JavaPlugin implements Listener {
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
         String title = event.getView().getTitle();
-        if (!title.equals(MAIN_TITLE) && !title.equals(CLAIM_TITLE) && !title.equals(GIVE_TITLE)) return;
+        if (!title.equals(MAIN_TITLE) && !title.equals(CLAIM_TITLE) && !title.equals(GIVE_TITLE) && !title.equals(DELETE_TITLE)) return;
         event.setCancelled(true);
         if (!player.isOp()) {
             player.closeInventory();
@@ -110,6 +112,7 @@ public final class SatyrKits extends JavaPlugin implements Listener {
                 }
                 case "Claim Kit" -> openKitMenu(player, false);
                 case "Give Kit All" -> openKitMenu(player, true);
+                case "Delete Kit" -> openDeleteMenu(player);
             }
             return;
         }
@@ -119,6 +122,7 @@ public final class SatyrKits extends JavaPlugin implements Listener {
         }
         if (title.equals(CLAIM_TITLE)) giveKit(player, display);
         else if (title.equals(GIVE_TITLE)) giveKitToAll(display, player);
+        else if (title.equals(DELETE_TITLE)) deleteKit(player, display);
         player.closeInventory();
     }
 
@@ -140,6 +144,31 @@ public final class SatyrKits extends JavaPlugin implements Listener {
             }
             saveKit(player, name);
         });
+    }
+
+
+    private void openDeleteMenu(Player player) {
+        Inventory inv = Bukkit.createInventory(null, 54, DELETE_TITLE);
+        ConfigurationSection section = getConfig().getConfigurationSection("kits");
+        if (section != null) {
+            int slot = 0;
+            for (String kitName : section.getKeys(false)) {
+                if (slot >= inv.getSize() - 1) break;
+                inv.setItem(slot++, menuItem(Material.BARRIER, "&c" + kitName, "&7Click to permanently delete this kit."));
+            }
+        }
+        inv.setItem(53, menuItem(Material.ARROW, "&cBack", "&7Return to the main menu."));
+        player.openInventory(inv);
+    }
+
+    private void deleteKit(Player player, String name) {
+        if (!getConfig().isConfigurationSection("kits." + name)) {
+            player.sendMessage(color("&cKit not found: &e" + name));
+            return;
+        }
+        getConfig().set("kits." + name, null);
+        saveConfig();
+        player.sendMessage(color("&aKit &e" + name + " &ahas been deleted."));
     }
 
     private void saveKit(Player player, String rawName) {
